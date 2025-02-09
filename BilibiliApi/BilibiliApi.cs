@@ -42,13 +42,14 @@ public class BilibiliApi : IMusicApi
         var resp2 = await _http.GetAsync("https://www.bilibili.com");
         var cookies = resp2.Headers.GetValues("Set-Cookie");
         _http.DefaultRequestHeaders.Add("Cookie", cookies);
+        _http.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0");
     }
 
     private async Task<bool> CheckSESSDATAAsync(string sessdata)
     {
         var http = new HttpClient();
         http.DefaultRequestHeaders.Add("Cookie", $"SESSDATA={sessdata}");
-        var resp = await http.GetStringAsync("https://api.bilibili.com/nav");
+        var resp = await http.GetStringAsync("https://api.bilibili.com/x/web-interface/nav");
         var j = JsonNode.Parse(resp)!;
         return j["code"]!.GetValue<int>() == 0;
     }
@@ -76,7 +77,7 @@ public class BilibiliApi : IMusicApi
         var j = JsonSerializer.Deserialize<BVQueryJson.RootObject>(resp);
         if (j is null || j.code != 0 || j.data is null)
             throw new Exception($"Unable to get playable music, message: {resp}");
-        return new Music($"{j.data.bvid},{j.data.cid}", j.data.title, new[] { j.data.owner.name });
+        return new Music($"{j.data.bvid},{j.data.cid}", j.data.title, new[] { j.data.owner.name }, j.data.pic, "https://www.bilibili.com/video/"+ $"{j.data.bvid}");
     }
 
     public async Task<IEnumerable<Music>> SearchMusicByNameAsync(string name)
@@ -88,7 +89,7 @@ public class BilibiliApi : IMusicApi
     {
         var ids = music.Id.Split(',');
         var resp = await _http.GetStringAsync(
-            $"https://api.bilibili.com/x/player/playurl?bvid={ids[0]}&cid={ids[1]}&fnval=16");
+            $"https://api.bilibili.com/x/player/wbi/playurl?bvid={ids[0]}&cid={ids[1]}&fnval=16");
         var j = JsonSerializer.Deserialize<PlayUrlJson.RootObject>(resp);
         if (j is null || j.code != 0 || j.data is null)
             throw new Exception($"Unable to get playable music, message: {resp}");
@@ -136,7 +137,7 @@ public class BilibiliApi : IMusicApi
         if (j.data?.medias is null)
             return Array.Empty<Music>();
         return j.data.medias.Where(x => x.title != "已失效视频" && x.type == 2)
-            .Select(x => new Music(x.bvid, x.title, new[] { x.upper.name }));
+            .Select(x => new Music(x.bvid, x.title, new[] { x.upper.name }, "https://i0.hdslb.com/bfs/static/jinkela/video/asserts/no_video.png", ""));
     }
 
     #region JsonClasses
@@ -212,7 +213,8 @@ public class BilibiliApi : IMusicApi
             string bvid,
             string title,
             Owner owner,
-            long cid
+            long cid,
+            string pic
         );
 
         public record Owner(

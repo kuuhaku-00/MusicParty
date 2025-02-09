@@ -46,12 +46,14 @@ import { BilibiliBinder } from '../src/components/bilibilibinder';
 
 export default function Home() {
   const [src, setSrc] = useState('');
+  const [ImageUrl, setImageUrl] = useState(''); // 当前播放的音乐文件 URL
   const [playtime, setPlaytime] = useState(0);
   const [nowPlaying, setNowPlaying] = useState<{
     music: Music;
     enqueuer: string;
   }>();
-  const [queue, setQueue] = useState<MusicOrderAction[]>([]);
+  const [queue, setQueue] = useState<MusicOrderAction[]>([]); 
+  const [loopMode, setLoopMode] = useState(true);
   const [userName, setUserName] = useState('');
   const [newName, setNewName] = useState('');
   const [onlineUsers, setOnlineUsers] = useState<
@@ -73,11 +75,12 @@ export default function Home() {
         async (music: Music, enqueuerName: string, playedTime: number) => {
           console.log(music);
           setSrc(music.url);
+          setImageUrl(music.imageUrl);
           setNowPlaying({ music, enqueuer: enqueuerName });
           setPlaytime(playedTime);
         },
         async (actionId: string, music: Music, enqueuerName: string) => {
-          setQueue((q) => q.concat({ actionId, music, enqueuerName }));
+          setQueue((q) => q.concat({ actionId, music, enqueuerName, originalUrl: music.originalUrl }));
         },
         async () => {
           setQueue((q) => q.slice(1));
@@ -116,6 +119,13 @@ export default function Home() {
         async (msg: string) => {
           console.error(msg);
           toastError(t, msg);
+        },
+        (status: boolean) => {
+          setLoopMode(status);
+        },
+        async (actionId: string, operatorName: string, musicName: string) => {
+          toastInfo(t, `${operatorName} 删除了歌曲 "${musicName}"`);
+          setQueue(q => q.filter(x => x.actionId !== actionId));
         }
       );
       conn.current
@@ -126,6 +136,7 @@ export default function Home() {
             setQueue(queue);
             const users = await conn.current!.getOnlineUsers();
             setOnlineUsers(users);
+            await conn.current!.requestLoopModeStatus();
           } catch (err: any) {
             toastError(t, err);
           }
@@ -150,8 +161,22 @@ export default function Home() {
     }
   }, []);
 
+  const toggleLoopMode = (isLooping: boolean) => {
+    setLoopMode(isLooping);
+    conn.current!.setLoopMode(isLooping)
+      .catch((error) => {
+        setLoopMode(!isLooping);
+        console.error('切换循环模式失败:', error);
+        toastError(t, `循环模式切换失败: ${error.message}`);
+      });
+  };
+
   return (
-    <Grid templateAreas={`"nav main"`} gridTemplateColumns={'2fr 5fr'} gap='1'>
+    <Grid 
+      templateAreas={["'nav' 'main'", "'nav main'"]}
+      gridTemplateColumns={['1fr', '2fr 5fr']}
+      gap='1'
+    >
       <Head>
         <title>🎵 音趴 🎵</title>
         <meta name='description' content='享受音趴！' />
@@ -159,7 +184,7 @@ export default function Home() {
         <meta name='referrer' content='never' />
       </Head>
       <GridItem area={'nav'}>
-        <Stack m={4} spacing={4}>
+        <Stack m={[2, 4]} spacing={[2, 4]}>
           <Card>
             <CardHeader>
               <Heading>{`欢迎, ${userName}!`}</Heading>
@@ -272,27 +297,10 @@ export default function Home() {
           </TabList>
           <TabPanels>
             <TabPanel>
-              <Flex flexDirection={'row'} mb={4} alignItems={'flex-end'}>
-                {nowPlaying ? (
-                  <>
-                    <Heading>
-                      {`正在播放:\n ${nowPlaying?.music.name} - ${nowPlaying?.music.artists}`}
-                    </Heading>
-                    <Text size={'md'} fontStyle={'italic'} ml={2}>
-                      {`由 ${nowPlaying?.enqueuer} 点歌`}
-                    </Text>
-                  </>
-                ) : (
-                  <Heading>暂无歌曲正在播放</Heading>
-                )}
-              </Flex>
-
               <MusicPlayer
                 src={src}
                 playtime={playtime}
-                nextClick={() => {
-                  conn.current?.nextSong();
-                }}
+                nextClick={() => conn.current?.nextSong()}
                 reset={() => {
                   console.log('reset');
                   conn.current!.requestSetNowPlaying();
@@ -300,6 +308,17 @@ export default function Home() {
                     setQueue(q);
                   });
                 }}
+                imageUrl={ImageUrl}
+                nowPlaying={
+                  nowPlaying
+                    ? {
+                        songName: nowPlaying.music.name,
+                        artist: nowPlaying.music.artists.join(', '),
+                        requester: nowPlaying.enqueuer,
+                        originalUrl: nowPlaying.music.originalUrl,
+                      }
+                    : undefined
+                }
               />
 
               <MusicQueue
@@ -307,6 +326,11 @@ export default function Home() {
                 top={(actionId) => {
                   conn.current!.topSong(actionId);
                 }}
+                delete={(actionId) => {
+                  conn.current!.deleteSong(actionId);
+                }}
+                loopMode={loopMode}
+                toggleLoopMode={toggleLoopMode}
               />
             </TabPanel>
             <TabPanel>
