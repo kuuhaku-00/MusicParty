@@ -55,7 +55,12 @@ curl -fsSL https://deb.nodesource.com/setup_18.11.11 | sudo -E bash -
 # 安装 Node.js 和 npm
 sudo apt install -y nodejs
 ```
-
+npm镜像源，速度不行就换npm源，淘宝的npm镜像源
+```
+npm config set registry https://registry.npmmirror.com/
+```
+系统镜像软件源，必要情况下还需要更换系统软件源，我这里使用的debian
+[https://mirrors.tuna.tsinghua.edu.cn/help/debian/](https://mirrors.tuna.tsinghua.edu.cn/help/debian/)
 
 
 
