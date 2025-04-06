@@ -41,6 +41,19 @@ docker image prune
 docker build -t musicparty-frontend:latest --file Dockerfile-frontend . && docker build -t musicparty-backend:latest --file Dockerfile-backend . && docker build -t musicparty-neteaseapi:latest --file Dockerfile-neteaseapi . && docker build -t musicparty-qqmusicapi:latest --file Dockerfile-qqmusicapi . && docker image prune
 ```
 
+注意，没有安装nodejs与npm是构建不了的，会有报错
+安装nodejs与npm，正常安装nodejs会自带npm，若没有则手动安装一下
+```
+sudo apt install -y nodejs
+sudo apt install -y npm
+```
+推荐的nodejs安装方式
+```
+# 添加 NodeSource 官方源（以 Node.js 20.x 为例）
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# 安装 Node.js 和 npm
+sudo apt install -y nodejs
+```
 
 
 
