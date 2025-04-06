@@ -50,8 +50,8 @@ sudo apt install -y npm
 ```
 推荐的nodejs安装方式
 ```
-# 添加 NodeSource 官方源（以 Node.js 20.x 为例）
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# 添加 NodeSource 官方源（以 Node.js 18.11.11 为例）
+curl -fsSL https://deb.nodesource.com/setup_18.11.11 | sudo -E bash -
 # 安装 Node.js 和 npm
 sudo apt install -y nodejs
 ```
