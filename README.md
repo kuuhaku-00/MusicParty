@@ -42,6 +42,7 @@ docker build -t musicparty-frontend:latest --file Dockerfile-frontend . && docke
 ```
 
 注意，没有安装nodejs与npm是构建不了的，会有报错
+
 安装nodejs与npm，正常安装nodejs会自带npm，若没有则手动安装一下
 ```
 sudo apt install -y nodejs
